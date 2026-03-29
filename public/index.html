@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: Arial; background: #111; color: white; }
+#messages { list-style: none; padding: 10px; }
+li { margin: 10px; padding: 10px; background: #2a2a2a; border-radius: 10px; max-width: 70%; }
+.me { background: #0084ff; margin-left: auto; }
+</style>
+</head>
+<body>
+
+<h3>Chat 💬</h3>
+
+<input id="username" placeholder="Adın">
+<button onclick="setName()">Giriş</button>
+
+<ul id="messages"></ul>
+
+<input id="input" placeholder="Mesaj yaz">
+<button onclick="sendMessage()">Gönder</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let username = "";
+
+function setName() {
+    username = document.getElementById("username").value;
+}
+
+function sendMessage() {
+    let input = document.getElementById("input");
+
+    socket.emit("chat message", {
+        user: username,
+        text: input.value
+    });
+
+    input.value = "";
+}
+
+// GEÇMİŞ
+socket.on("chat history", function(msgs) {
+    msgs.forEach(msg => addMessage(msg));
+});
+
+// YENİ MESAJ
+socket.on("chat message", function(msg) {
+    addMessage(msg);
+});
+
+function addMessage(msg) {
+    let li = document.createElement("li");
+
+    if (msg.user === username) {
+        li.classList.add("me");
+    }
+
+    li.textContent = msg.user + ": " + msg.text;
+    document.getElementById("messages").appendChild(li);
+}
+</script>
+
+</body>
+</html>
