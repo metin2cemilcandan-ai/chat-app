@@ -16,6 +16,10 @@ io.on("connection", (socket) => {
         messages.push(msg);
         io.emit("chat message", msg);
     });
+    socket.on("delete message", (id) => {
+  messages = messages.filter(m => m.id !== id);
+  io.emit("delete message", id);
+});
 });
 
 http.listen(3000, "0.0.0.0", () => {
