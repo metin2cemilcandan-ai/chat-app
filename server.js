@@ -22,6 +22,8 @@ io.on("connection", (socket) => {
 });
 });
 
-http.listen(3000, "0.0.0.0", () => {
+const PORT = process.env.PORT || 3000;
+
+http.listen(PORT, "0.0.0.0", () => {
     console.log("Server çalışıyor");
 });
