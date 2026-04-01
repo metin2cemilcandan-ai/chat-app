@@ -39,7 +39,7 @@ app.post("/login", (req, res) => {
   }
   res.send("Şifre yanlış");
 });
-app.use(express.static("public"));
+app.use("/assets", express.static("public"));
 
 app.get("/", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
