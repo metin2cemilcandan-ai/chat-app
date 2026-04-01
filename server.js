@@ -41,6 +41,9 @@ app.post("/login", (req, res) => {
 });
 app.use("/assets", express.static("public"));
 
+app.use("/files", express.static("public"));
+
+
 app.get("/", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
