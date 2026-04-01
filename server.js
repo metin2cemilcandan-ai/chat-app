@@ -39,18 +39,19 @@ app.post("/login", (req, res) => {
   }
   res.send("Şifre yanlış");
 });
+app.use(express.static("public"));
 
-app.use("/", requireLogin, express.static("public"));
-
+app.get("/", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 const FILE = path.join(__dirname, "messages.json");
 
 let messages = [];
-if (fs.existsSync(FILE)) {
-  messages = JSON.parse(fs.readFileSync(FILE, "utf8"));
+if (fs.existsSync(FILE)) {  messages = JSON.parse(fs.readFileSync(FILE, "utf8"));
 }
 
 io.on("connection", (socket) => {
-  console.log("Bağlandı");
+ console.log("Bağlandı");
 
   socket.emit("chat history", messages);
 
