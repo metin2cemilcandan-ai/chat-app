@@ -1,67 +1,279 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Chat</title>
+
 <style>
-body { font-family: Arial; background: #111; color: white; }
-#messages { list-style: none; padding: 10px; }
-li { margin: 10px; padding: 10px; background: #2a2a2a; border-radius: 10px; max-width: 70%; }
-.me { background: #0084ff; margin-left: auto; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background:
+    linear-gradient(rgba(128,128,128,0.95), rgba(128,128,128,0.95)),
+    url("Arkaplan.png") no-repeat center center fixed;
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  padding-bottom: 90px;
+  display: flex;
+  flex-direction: column;
+}
+.message {
+  max-width: 75%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 15px;
+  color: white;
+  position: relative;
+}
+
+#inputArea {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  padding: 10px;
+  background: #eee;
+  z-index: 1000;
+}
+
+#messageInput {
+  flex: 1;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+}
+
+#sendBtn {
+  margin-left: 10px;
+  padding: 10px 15px;
+  border: none;
+  background: #007bff;
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+}
 </style>
+
 </head>
+
 <body>
 
-<h3>Chat 💬</h3>
+<div id="chat"></div>
 
-<input id="username" placeholder="Adın">
-<button onclick="setName()">Giriş</button>
+<div id="inputArea">
+  <input type="text" id="messageInput" placeholder="Mesaj yaz...">
 
-<ul id="messages"></ul>
+<button id="mediaBtn">📷</button>
+  <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
 
-<input id="input" placeholder="Mesaj yaz">
-<button onclick="sendMessage()">Gönder</button>
+  <button id="sendBtn">Gönder</button>
+</div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+ 
 <script>
-const socket = io();
-let username = "";
 
-function setName() {
-    username = document.getElementById("username").value;
+const firebaseConfig = {
+  apiKey: "AIzaSyCRY1CU9Tn9_YdFNmzzaACtrdZCKy_PFms",
+  authDomain: "ikisatir-chat.firebaseapp.com",
+  projectId: "ikisatir-chat",
+  storageBucket: "ikisatir-chat.firebasestorage.app",
+  messagingSenderId: "788113274999",
+  appId: "1:788113274999:web:bdd0fb7c72dd14e5f4ee72"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const mediaBtn = document.getElementById("mediaBtn");
+const mediaInput = document.getElementById("mediaInput");
+
+const chat = document.getElementById("chat");
+const input = document.getElementById("messageInput");
+const button = document.getElementById("sendBtn");
+mediaBtn.onclick = function () {
+  mediaInput.click();
+};
+
+mediaInput.onchange = function () {
+  sendMessage();
+};
+
+mediaBtn.onclick = function () {
+  mediaInput.click();
+};
+
+let userColor = localStorage.getItem("chatColor");
+
+const colors = [
+  "#6C5CE7",
+  "#00B894",
+  "#0984E3",
+  "#E17055",
+  "#E84393",
+  "#FDCB6E",
+  "#00CEC9",
+  "#D63031"
+];
+
+if (!userColor) {
+  userColor = colors[Math.floor(Math.random() * colors.length)];
+  localStorage.setItem("chatColor", userColor);
 }
 
-function sendMessage() {
-    let input = document.getElementById("input");
+function addMessage(id, msg) {
+  const msgDiv = document.createElement("div");
+  msgDiv.className = "message";
+  msgDiv.style.background = msg.color || "#007bff";
+  msgDiv.style.position = "relative";
 
-    socket.emit("chat message", {
-        user: username,
-        text: input.value
+  const textSpan = document.createElement("div");
+  textSpan.innerText = msg.text;
+
+  const timeSpan = document.createElement("div");
+  timeSpan.innerText = msg.time || "";
+  timeSpan.style.fontSize = "12px";
+  timeSpan.style.opacity = "0.8";
+  timeSpan.style.marginTop = "5px";
+  timeSpan.style.textAlign = "right";
+
+  const delBtn = document.createElement("button");
+  delBtn.innerText = "✕";
+  delBtn.style.position = "absolute";
+  delBtn.style.top = "-8px";
+  delBtn.style.right = "-8px";
+  delBtn.style.background = "white";
+  delBtn.style.color = "black";
+  delBtn.style.border = "none";
+  delBtn.style.borderRadius = "50%";
+  delBtn.style.width = "22px";
+  delBtn.style.height = "22px";
+  delBtn.style.cursor = "pointer";
+
+  delBtn.onclick = function () {
+    let hiddenMessages = JSON.parse(localStorage.getItem("hiddenMessages")) || [];
+    hiddenMessages.push(id);
+    localStorage.setItem("hiddenMessages", JSON.stringify(hiddenMessages));
+    msgDiv.remove();
+  };
+
+  msgDiv.appendChild(textSpan);
+  msgDiv.appendChild(timeSpan);
+  
+  if (msg.mediaUrl) {
+  if (msg.mediaType.startsWith("image")) {
+    const img = document.createElement("img");
+    img.src = msg.mediaUrl;
+    img.style.maxWidth = "220px";
+    img.style.borderRadius = "10px";
+    img.style.marginTop = "8px";
+    msgDiv.appendChild(img);
+  }
+
+  if (msg.mediaType.startsWith("video")) {
+    const video = document.createElement("video");
+    video.src = msg.mediaUrl;
+    video.controls = true;
+    video.style.maxWidth = "220px";
+    video.style.borderRadius = "10px";
+    video.style.marginTop = "8px";
+    msgDiv.appendChild(video);
+  }
+}
+  
+  msgDiv.appendChild(delBtn);
+
+  chat.appendChild(msgDiv);
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  const file = mediaInput.files[0];
+
+  if (!text && !file) return;
+
+  const now = new Date();
+  const tarihSaat =
+    now.toLocaleDateString("tr-TR") + " " +
+    now.toLocaleTimeString("tr-TR", {
+      hour: "2-digit",
+      minute: "2-digit"
     });
 
-    input.value = "";
+  let mediaUrl = "";
+  let mediaType = "";
+
+if (file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch("upload.php", {
+    method: "POST",
+    body: formData
+  });
+
+  mediaUrl = (await response.text()).trim();
+
+if (!mediaUrl) {
+  alert("Dosya yüklenemedi");
+  return;
+}
+  mediaType = file.type;
 }
 
-// GEÇMİŞ
-socket.on("chat history", function(msgs) {
-    msgs.forEach(msg => addMessage(msg));
+db.collection("messages").add({
+  username: localStorage.getItem("chatUser") || "Prens",
+  text: text,
+  mediaUrl: mediaUrl,
+  mediaType: mediaType,
+  color: userColor,
+  time: tarihSaat,
+  createdAt: Date.now()
 });
 
-// YENİ MESAJ
-socket.on("chat message", function(msg) {
-    addMessage(msg);
+  input.value = "";
+  mediaInput.value = "";
+}
+  
+button.onclick = sendMessage;
+
+input.addEventListener("keypress", function(e) {
+  if (e.key === "Enter") sendMessage();
 });
 
-function addMessage(msg) {
-    let li = document.createElement("li");
+db.collection("messages")
+  .orderBy("createdAt")
+  .onSnapshot((snapshot) => {
+    const isNearBottom =
+      chat.scrollHeight - chat.scrollTop <= chat.clientHeight + 100;
 
-    if (msg.user === username) {
-        li.classList.add("me");
+    chat.innerHTML = "";
+
+    const hiddenMessages = JSON.parse(localStorage.getItem("hiddenMessages")) || [];
+
+snapshot.forEach((doc) => {
+  if (!hiddenMessages.includes(doc.id)) {
+    addMessage(doc.id, doc.data());
+  }
+});
+
+    if (isNearBottom) {
+      chat.scrollTop = chat.scrollHeight;
     }
-
-    li.textContent = msg.user + ": " + msg.text;
-    document.getElementById("messages").appendChild(li);
-}
+  });
 </script>
+
 
 </body>
 </html>
