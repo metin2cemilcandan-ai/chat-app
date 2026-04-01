@@ -33,10 +33,18 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  if (req.body.password === "123456") {
+  if (req.body.password === "prens123") {
     req.session.loggedIn = true;
+    req.session.username = "Prens";
     return res.redirect("/");
   }
+
+  if (req.body.password === "prenses123") {
+    req.session.loggedIn = true;
+    req.session.username = "Prenses";
+    return res.redirect("/");
+  }
+
   res.send("Şifre yanlış");
 });
 app.use("/assets", express.static("public"));
