@@ -50,7 +50,9 @@ app.get("/", requireLogin, (req, res) => {
 const FILE = path.join(__dirname, "messages.json");
 
 let messages = [];
-if (fs.existsSync(FILE)) {  messages = JSON.parse(fs.readFileSync(FILE, "utf8"));
+
+if (fs.existsSync(FILE)) {
+  messages = JSON.parse(fs.readFileSync(FILE, "utf8"));
 }
 
 io.on("connection", (socket) => {
