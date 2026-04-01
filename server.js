@@ -47,6 +47,10 @@ app.post("/login", (req, res) => {
 
   res.send("Şifre yanlış");
 });
+
+app.get("/me", requireLogin, (req, res) => {
+  res.json({ username: req.session.username });
+});
 app.use("/assets", express.static("public"));
 
 app.use("/files", express.static("public"));
